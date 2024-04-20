@@ -5,6 +5,9 @@
   "author": "Darren Churchill",
   "license": "ISC",
   "main": "contacts.js",
+  "dependencies": {
+    "morgan": "^1.10.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.24.0",
     "@babel/eslint-parser": "^7.23.10",
