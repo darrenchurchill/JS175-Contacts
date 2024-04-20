@@ -34,6 +34,10 @@ app.set("views", "./views");
 app.set("view engine", "pug");
 
 app.use(express.static("public"));
+// This call, to use the express.urlencoded middleware function, could also be
+// placed as app.post's first callback below, if you only want to parse request
+// bodies for one particular route.
+app.use(express.urlencoded({ extended: false }));
 app.use(morgan("common"));
 
 app.get("/", (_req, res) => {
@@ -48,6 +52,16 @@ app.get("/contacts", (_req, res) => {
 
 app.get("/contacts/new", (_req, res) => {
   res.render("new-contact");
+});
+
+app.post("/contacts/new", (req, res) => {
+  contactData.push(new Contact(
+    req.body.firstName,
+    req.body.lastName,
+    req.body.phoneNumber
+  ));
+
+  res.redirect("/contacts");
 });
 
 app.listen(PORT, "localhost", () => {
