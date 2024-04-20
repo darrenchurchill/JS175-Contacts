@@ -11,5 +11,11 @@ html(lang="en-US")
   body
     header
       h1 #{title}
+
+    if errMsgs && errMsgs.length > 0
+      ul.flash
+        each msg in errMsgs
+          li.error= msg
+
     main
       block content

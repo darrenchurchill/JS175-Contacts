@@ -54,15 +54,59 @@ app.get("/contacts/new", (_req, res) => {
   res.render("new-contact");
 });
 
-app.post("/contacts/new", (req, res) => {
-  contactData.push(new Contact(
-    req.body.firstName,
-    req.body.lastName,
-    req.body.phoneNumber
-  ));
+app.post("/contacts/new",
+  (_req, res, next) => {
+    res.locals.errMsgs = [];
+    next();
+  },
+  (req, res, next) => {
+    if (!req.body.firstName) {
+      res.locals.errMsgs.push("First Name is a required field.");
+    }
+    next();
+  },
+  (req, res, next) => {
+    if (!req.body.lastName) {
+      res.locals.errMsgs.push("Last Name is a required field.");
+    }
+    next();
+  },
+  (req, res, next) => {
+    const phoneInvalidChars = /[^\d-]/;
+    const phoneFormat = /(\d{3})-?(\d{3})-?(\d{4})/;
 
-  res.redirect("/contacts");
-});
+    if (!req.body.phoneNumber) {
+      res.locals.errMsgs.push("Phone Number is a required field.");
+    } else if (phoneInvalidChars.test(req.body.phoneNumber)) {
+      res.locals.errMsgs.push('Phone Number can contain only digits (0-9) and dashes ("-")');
+    } else if (!phoneFormat.test(req.body.phoneNumber)) {
+      res.locals.errMsgs.push(
+        "Phone Number must contain exactly 10 digits in the form: ###-###-####. " +
+        "Dashes are optional."
+      );
+    }
+    next();
+  },
+  (_req, res, next) => {
+    if (res.locals.errMsgs.length === 0) {
+      next();
+      return;
+    }
+
+    res.render("new-contact", {
+      errMsgs: res.locals.errMsgs,
+    });
+  },
+  (req, res) => {
+    contactData.push(new Contact(
+      req.body.firstName,
+      req.body.lastName,
+      req.body.phoneNumber
+    ));
+
+    res.redirect("/contacts");
+  }
+);
 
 app.listen(PORT, "localhost", () => {
   console.log(`Server listening on port ${PORT}...`);
