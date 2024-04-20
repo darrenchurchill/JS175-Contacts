@@ -57,6 +57,10 @@ app.get("/contacts", (_req, res) => {
   });
 });
 
+app.get("/contacts/new", (_req, res) => {
+  res.render("new-contact");
+});
+
 app.listen(PORT, "localhost", () => {
   console.log(`Server listening on port ${PORT}...`);
 });
