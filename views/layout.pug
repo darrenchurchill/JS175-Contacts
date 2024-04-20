@@ -1,0 +1,15 @@
+doctype html
+
+- let title = "My Contacts Manager"
+
+html(lang="en-US")
+  head
+    title #{title}
+    meta(charset="UTF-8")
+    link(rel="stylesheet", href="/stylesheets/application.css")
+
+  body
+    header
+      h1 #{title}
+    main
+      block content
