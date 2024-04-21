@@ -96,7 +96,7 @@ app.post("/contacts/new",
     }
     next();
   },
-  (_req, res, next) => {
+  (req, res, next) => {
     if (res.locals.errMsgs.length === 0) {
       next();
       return;
@@ -104,6 +104,9 @@ app.post("/contacts/new",
 
     res.render("new-contact", {
       errMsgs: res.locals.errMsgs,
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      phoneNumber: req.body.phoneNumber,
     });
   },
   (_req, res) => {

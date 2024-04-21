@@ -8,11 +8,11 @@ block content
         dt
           label(for="firstName") First Name:
         dd
-          input(type="text", name="firstName", id="firstName")
+          input(type="text", name="firstName", id="firstName", value=firstName)
         dt
           label(for="lastName") Last Name:
         dd
-          input(type="text", name="lastName", id="lastName")
+          input(type="text", name="lastName", id="lastName", value=lastName)
         dt
           label(for="phoneNumber") Phone Number:
         dd
@@ -20,7 +20,8 @@ block content
             type="text",
             placeholder="###-###-####",
             name="phoneNumber",
-            id="phoneNumber"
+            id="phoneNumber",
+            value=phoneNumber
           )
 
     fieldset
