@@ -3,7 +3,9 @@
  * Contacts
  * contacts.js
  */
+const store = require("connect-loki");
 const express = require("express");
+const session = require("express-session");
 const { body, matchedData, validationResult } = require("express-validator");
 const morgan = require("morgan");
 
@@ -11,11 +13,12 @@ const Contact = require("./contact");
 
 const PORT = 3000;
 const app = express();
+const LokiStore = store(session);
 
 // NOTE: You could also use app.locals to store this contact data and express
 // will automatically make the variable available to the template engine.
 // https://expressjs.com/en/4x/api.html#app.locals
-let contactData = [
+const contactData = [
   new Contact("Mike", "Jones", "281-330-8004"),
   new Contact("Jenny", "Keys", "768-867-5309"),
   new Contact("Max", "Entiger", "214-748-3647"),
@@ -24,6 +27,8 @@ let contactData = [
   data[contact.fullName()] = contact;
   return data;
 }, Object.create(null));
+
+const clone = (object) => JSON.parse(JSON.stringify(object));
 
 const sortContacts = (contacts) => {
   return Object.values(contacts).sort((contactA, contactB) => {
@@ -55,14 +60,33 @@ app.use(express.static("public"));
 // bodies for one particular route.
 app.use(express.urlencoded({ extended: false }));
 app.use(morgan("common"));
+app.use(session({
+  cookie: {
+    httpOnly: true,
+    maxAge: 31 * 24 * 60 * 60 * 1000, // ms => 31 days
+    path: "/",
+    secure: false,
+  },
+  name: "launch-school-contacts-manager-session-id",
+  resave: false,
+  saveUninitialized: true,
+  secret: "this is not very secure",
+  store: new LokiStore({}),
+}));
+app.use((req, _res, next) => {
+  if (!("contactData" in req.session)) {
+    req.session.contactData = clone(contactData);
+  }
+  next();
+});
 
 app.get("/", (_req, res) => {
   res.redirect("/contacts");
 });
 
-app.get("/contacts", (_req, res) => {
+app.get("/contacts", (req, res) => {
   res.render("contacts", {
-    contacts: sortContacts(contactData),
+    contacts: sortContacts(req.session.contactData),
   });
 });
 
@@ -108,7 +132,7 @@ app.post("/contacts/new",
   (req, res) => {
     let data = matchedData(req);
     let contact = new Contact(data.firstName, data.lastName, data.phoneNumber);
-    contactData[contact.fullName()] = contact;
+    req.session.contactData[contact.fullName()] = contact;
 
     res.redirect("/contacts");
   }
