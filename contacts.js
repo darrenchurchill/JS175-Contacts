@@ -79,7 +79,11 @@ app.post("/contacts/new",
     .withMessage("Phone Number is required.")
     .bail()
     .matches(Contact.VALID_PHONE_FORMAT)
-    .withMessage("Phone number must be in the form ###-###-####"),
+    .withMessage("Phone number must be in the form ###-###-####")
+    .customSanitizer((phone) => {
+      phone = phone.split("-").join("");
+      return `${phone.slice(0, 3)}-${phone.slice(3, 6)}-${phone.slice(6)}`;
+    }),
 
   (req, res, next) => {
     let result = (
