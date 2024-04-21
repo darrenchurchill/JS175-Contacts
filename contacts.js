@@ -4,6 +4,7 @@
  * contacts.js
  */
 const express = require("express");
+const { body, matchedData, validationResult } = require("express-validator");
 const morgan = require("morgan");
 
 const Contact = require("./contact");
@@ -15,10 +16,10 @@ const app = express();
 // will automatically make the variable available to the template engine.
 // https://expressjs.com/en/4x/api.html#app.locals
 let contactData = [
-  new Contact().setAll("Mike", "Jones", "281-330-8004"),
-  new Contact().setAll("Jenny", "Keys", "768-867-5309"),
-  new Contact().setAll("Max", "Entiger", "214-748-3647"),
-  new Contact().setAll("Alicia", "Keys", "515-489-4608"),
+  new Contact("Mike", "Jones", "281-330-8004"),
+  new Contact("Jenny", "Keys", "768-867-5309"),
+  new Contact("Max", "Entiger", "214-748-3647"),
+  new Contact("Alicia", "Keys", "515-489-4608"),
 ].reduce((data, contact) => {
   data[contact.fullName()] = contact;
   return data;
@@ -32,6 +33,18 @@ const sortContacts = (contacts) => {
     return contactA.lastName.localeCompare(contactB.lastName);
   });
 };
+
+function createNameChain(fieldName, msgPrefix) {
+  return body(fieldName)
+    .trim()
+    .notEmpty()
+    .withMessage(`${msgPrefix} is required.`)
+    .bail()
+    .isLength({ max: Contact.MAX_NAME_LENGTH })
+    .withMessage(`${msgPrefix} must be ${Contact.MAX_NAME_LENGTH} letters or less.`)
+    .matches(Contact.VALID_NAME_CHARS)
+    .withMessage(`${msgPrefix} must only contain letters and spaces.`);
+}
 
 app.set("views", "./views");
 app.set("view engine", "pug");
@@ -58,59 +71,40 @@ app.get("/contacts/new", (_req, res) => {
 });
 
 app.post("/contacts/new",
-  (_req, res, next) => {
-    res.locals.errMsgs = [];
-    res.locals.contact = new Contact();
-    next();
-  },
+  createNameChain("firstName", "First Name"),
+  createNameChain("lastName", "Last Name"),
+  body("phoneNumber")
+    .trim()
+    .notEmpty()
+    .withMessage("Phone Number is required.")
+    .bail()
+    .matches(Contact.VALID_PHONE_FORMAT)
+    .withMessage("Phone number must be in the form ###-###-####"),
+
   (req, res, next) => {
-    try {
-      res.locals.contact.setFirstName(req.body.firstName);
-    } catch (err) {
-      res.locals.errMsgs.push(err.message);
-    }
-    next();
-  },
-  (req, res, next) => {
-    try {
-      res.locals.contact.setLastName(req.body.lastName);
-    } catch (err) {
-      res.locals.errMsgs.push(err.message);
-    }
-    next();
-  },
-  (req, res, next) => {
-    try {
-      res.locals.contact.setPhoneNumber(req.body.phoneNumber);
-    } catch (err) {
-      res.locals.errMsgs.push(err.message);
-    }
-    next();
-  },
-  (_req, res, next) => {
-    if (res.locals.contact.fullName() in contactData) {
-      res.locals.errMsgs.push(
-        "The contact Full Name (First Name + Last Name) " +
-        "must be unique in the contacts list."
-      );
-    }
-    next();
-  },
-  (req, res, next) => {
-    if (res.locals.errMsgs.length === 0) {
+    let result = (
+      validationResult.withDefaults({
+        formatter: (err) => err.msg
+      })
+    )(req);
+
+    if (result.isEmpty()) {
       next();
       return;
     }
 
     res.render("new-contact", {
-      errMsgs: res.locals.errMsgs,
+      errMsgs: result.array(),
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       phoneNumber: req.body.phoneNumber,
     });
   },
-  (_req, res) => {
-    contactData[res.locals.contact.fullName()] = res.locals.contact;
+
+  (req, res) => {
+    let data = matchedData(req);
+    let contact = new Contact(data.firstName, data.lastName, data.phoneNumber);
+    contactData[contact.fullName()] = contact;
 
     res.redirect("/contacts");
   }
