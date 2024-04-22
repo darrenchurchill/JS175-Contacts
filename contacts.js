@@ -166,6 +166,7 @@ app.post("/contacts/new",
     let contact = new Contact(data.firstName, data.lastName, data.phoneNumber);
     req.session.contactData[contact.fullName()] = contact;
 
+    req.flash("success", "New contact added to list!");
     res.redirect("/contacts");
   }
 );
