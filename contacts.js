@@ -5,6 +5,7 @@
  */
 const store = require("connect-loki");
 const express = require("express");
+const flash = require("express-flash");
 const session = require("express-session");
 const { body, matchedData, validationResult } = require("express-validator");
 const morgan = require("morgan");
@@ -79,6 +80,11 @@ app.use((req, _res, next) => {
   }
   next();
 });
+// express-flash's flash() wraps res.render() to set res.locals.messages with
+// req.flash()'s no-arg result. So, you can use the `messages` variable in any
+// rendered template. It will have ({string} type, {Array.<string>} msgs)
+// key/values, populated by any req.flash() calls to add flash messages.
+app.use(flash());
 
 app.get("/", (_req, res) => {
   res.redirect("/contacts");
@@ -121,12 +127,22 @@ app.post("/contacts/new",
       return;
     }
 
+    result.array().forEach((errMsg) => req.flash("error", errMsg));
+
     res.render("new-contact", {
-      errMsgs: result.array(),
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       phoneNumber: req.body.phoneNumber,
     });
+
+    // Save session to store after res.render()'s implicit req.session.flash
+    // reset through a no-arg req.flash() call.
+    // For some reason, flash messages can persist between multiple requests if
+    // you don't explicitly save the session data to the store. Calling
+    // req.flash() with no arguments does clear req.session.flash, but the
+    // update doesn't always make its way to the session store. It's at least a
+    // problem with express-session and connect-loki.
+    req.session.save();
   },
 
   (req, res) => {

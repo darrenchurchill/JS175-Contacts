@@ -12,10 +12,12 @@ html(lang="en-US")
     header
       h1 #{title}
 
-    if errMsgs && errMsgs.length > 0
+    if messages && Object.keys(messages).length > 0
+      - let msgTypes = Object.keys(messages)
       ul.flash
-        each msg in errMsgs
-          li.error= msg
+        each msgType in msgTypes
+          each msg in messages[msgType]
+            li.flash(class=msgType)= msg
 
     main
       block content
